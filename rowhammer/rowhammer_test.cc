@@ -63,17 +63,23 @@ class Timer {
 static void toggle(int iterations, int addr_count) {
   Timer timer;
   for (int j = 0; j < iterations; j++) {
+    // 随机获取addr_count个地址，addrs[]是指针数组
     uint32_t *addrs[addr_count];
     for (int a = 0; a < addr_count; a++)
       addrs[a] = (uint32_t *) pick_addr();
 
+    // 攻击核心步骤，重复读取darm
+    ////////////////////////////////////////////////
     uint32_t sum = 0;
     for (int i = 0; i < toggles; i++) {
+      // 把addrs中所有元素对应地址数据调入缓存
       for (int a = 0; a < addr_count; a++)
         sum += *addrs[a] + 1;
+      // 清除addrs中所有元素对应地址数据的缓存
       for (int a = 0; a < addr_count; a++)
         asm volatile("clflush (%0)" : : "r" (addrs[a]) : "memory");
     }
+    ////////////////////////////////////////////////
 
     // Sanity check.  We don't expect this to fail, because reading
     // these rows refreshes them.
@@ -100,10 +106,11 @@ static void toggle(int iterations, int addr_count) {
 }
 
 void main_prog() {
+  //分配一个大内存
   g_mem = (char *) mmap(NULL, mem_size, PROT_READ | PROT_WRITE,
                         MAP_ANON | MAP_PRIVATE, -1, 0);
   assert(g_mem != MAP_FAILED);
-
+  //初始化内存全部为0xff
   printf("clear\n");
   memset(g_mem, 0xff, mem_size);
 
@@ -113,6 +120,7 @@ void main_prog() {
     printf("Iteration %i (after %.2fs)\n", iter++, t.get_diff());
     toggle(10, 8);
 
+    //检查是否存在反转
     Timer check_timer;
     uint64_t *end = (uint64_t *) (g_mem + mem_size);
     uint64_t *ptr;
@@ -136,17 +144,19 @@ int main() {
   // the test in.  Otherwise, if process 1 exits or crashes, this will
   // cause a kernel panic (which can cause a reboot or just obscure
   // log output and prevent console scrollback from working).
+  // 新建子进程
   int pid = fork();
+  //在子进程中执行
   if (pid == 0) {
     main_prog();
     _exit(1);
   }
-
+  //父进程等待子进程完成
   int status;
   if (waitpid(pid, &status, 0) == pid) {
     printf("** exited with status %i (0x%x)\n", status, status);
   }
-
+  
   for (;;) {
     sleep(999);
   }
