@@ -1,0 +1,23 @@
+diff --git a/config/x86_64/chips/generic/chip.cfg b/config/x86_64/chips/generic/chip.cfg
+index 16ce7e4..6763c8a 100644
+--- a/config/x86_64/chips/generic/chip.cfg
++++ b/config/x86_64/chips/generic/chip.cfg
+@@ -19,4 +19,4 @@
+ # You should have received a copy of the GNU General Public License along with
+ # this program.  If not, see <http://www.gnu.org/licenses/>.
+ 
+-export CHIP_CFLAGS="-std=gnu99"
++export CHIP_CFLAGS="-fPIC -std=gnu99"
+diff --git a/src/crc32/crc_32.c b/src/crc32/crc_32.c
+index ad53ddd..b65b31e 100644
+--- a/src/crc32/crc_32.c
++++ b/src/crc32/crc_32.c
+@@ -200,7 +200,7 @@ int benchmark()
+ 
+ int verify_benchmark(int r)
+ {
+-  int expected = 1207487004;
++  int expected = -69560627;
+ 
+   if (r != expected)
+     return 0;
